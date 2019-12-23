@@ -1,0 +1,39 @@
+chain-state-db-size-mb = 4096
+chain-state-db-guard-size-mb = 256
+
+http-server-address = 0.0.0.0:8888
+p2p-listen-endpoint = 0.0.0.0:9876
+
+#peers
+p2p-peer-address = api:9876
+p2p-peer-address = genesis:9876
+
+agent-name = "KAFKA"
+
+max-clients = 50
+
+access-control-allow-origin = *
+http-validate-host = false
+
+plugin = eosio::chain_api_plugin
+plugin = eosio::ultra_kafka_plugin
+whitelist-action = eosio::newaccount
+whitelist-action = ultra.shop::buy
+whitelist-action = eosio.token::issue
+whitelist-action = eosio.token::transfer
+whitelist-action = ultra.nft::regastc
+whitelist-action = ultra.nft::transfer
+accepted-block-topic = block-accepted
+cancelled-block-topic = block-cancelled
+irreversible-block-topic = block-irreversible
+environment-parameter = Dev
+kafka-uri = 127.0.0.1:9092
+kafka-queue-size = 20000
+
+ENV ssl_enabled false
+#ssl-key-location = /opt/eosio.contracts/kafka_user_key
+#ssl-certificate-location = /opt/eosio.contracts/kafka_user_cert
+#ssl-ca-location = /opt/eosio.contracts/kafka_ca_cert
+
+message-format = msgpack
+max-transaction-time = 300000

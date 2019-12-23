@@ -1,0 +1,113 @@
+version: '3.7'
+
+services:
+  kafka:
+    container_name: kafka-node
+    build:
+      context: ./nodes
+      dockerfile: kafka.Dockerfile
+      args:
+        - KAFKA_ARGS=${KAFKA_ARGS}
+    volumes:
+      - ./nodes/data/config/config.ini.kafka:/opt/kafka/config.ini
+      - ./nodes/data/config/genesis.json:/opt/kafka/genesis.json
+    ports:
+      - "8887:8887"
+      - "9875:9875"
+      - "9092:9092"
+  genesis:
+    container_name: genesis-node
+    build:
+      context: ./nodes
+      dockerfile: producer.Dockerfile
+      args:
+        - PROD_ARGS=${PROD_ARGS}
+    image: producer
+    volumes:
+      - ./nodes/data/config/config.ini.genesis:/opt/producer/config.ini
+      - ./nodes/data/config/genesis.json:/opt/producer/genesis.json
+      - ./nodes/data/config/bootup.sh:/opt/producer/bootup.sh
+      - ./nodes/data/contracts:/opt/producer/contracts
+    ports:
+      - "8889:8888"
+      - "9877:9877"
+  api:
+    container_name: api-node
+    depends_on:
+      - genesis
+    build:
+      context: ./nodes
+      dockerfile: api.Dockerfile
+      args:
+        - API_ARGS=${API_ARGS}
+    volumes:
+      - ./nodes/data/config/config.ini.api:/opt/api/config.ini
+      - ./nodes/data/config/genesis.json:/opt/api/genesis.json
+    ports:
+      - "8888:8888"
+      - "8080:8080"
+      - "9876:9876"
+  #hyperion history
+  hyperion-elastic:
+    container_name: hyperion-elastic
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.3.2
+    restart: always
+    env_file: ./hyperion/config/elastic.env
+    volumes:
+      - ./hyperion/data/elastic:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+  hyperion-kibana:
+    container_name: hyperion-kibana
+    image: docker.elastic.co/kibana/kibana:7.3.2
+    env_file: ./hyperion/config/kibana.env
+    ports:
+      - "5601:5601"
+    depends_on:
+      - hyperion-elastic
+  hyperion-redis:
+    container_name: hyperion-redis
+    image: redis:5-alpine
+    restart: always
+    env_file: ./hyperion/config/redis.env
+    volumes:
+      - ./hyperion/data/redis:/data
+  hyperion-mq:
+    container_name: hyperion-mq
+    image: rabbitmq:3.7-management
+    restart: on-failure
+    env_file: ./hyperion/config/rabbitmq.env
+    volumes:
+      - ./hyperion/data/rabbitmq:/var/lib/rabbitmq
+  hyperion-indexer:
+    container_name: hyperion-indexer
+    build:
+      context: ./hyperion/build/
+      dockerfile: Indexer.Dockerfile
+    restart: always
+    depends_on:
+      - hyperion-elastic
+      - hyperion-redis
+      - hyperion-mq
+    volumes:
+      - ./hyperion/config/ecosystem.config.json:/root/app/Hyperion-History-API/ecosystem.config.json
+      - ./hyperion/config/connections.json:/root/app/Hyperion-History-API/connections.json
+    #  - ./hyperion/config/wait-for-elastic.sh:/root/app/wait-for-elastic.sh
+    #command: sh -c '/root/app/wait-for-elastic.sh hyperion-elastic:9200 -- pm2-runtime ecosystem.config.json --only Indexer --update-env'
+  hyperion-api:
+    container_name: hyperion-api
+    build:
+      context: ./hyperion/build/
+      dockerfile: API.Dockerfile
+    restart: always
+    ports:
+      - "7000:7000"
+    depends_on:
+      - hyperion-elastic
+      - hyperion-redis
+      - hyperion-mq
+    volumes:
+      - ./hyperion/config/ecosystem.config.json:/root/app/Hyperion-History-API/ecosystem.config.json
+      - ./hyperion/config/connections.json:/root/app/Hyperion-History-API/connections.json
+      - ./hyperion/config/wait-for-elastic.sh:/root/app/wait-for-elastic.sh
+    command: sh -c '/root/app/wait-for-elastic.sh hyperion-elastic:9200 -- pm2-runtime ecosystem.config.json --only API --update-env'

@@ -1,0 +1,25 @@
+chain-state-db-size-mb = 4096
+chain-state-db-guard-size-mb = 256
+
+http-server-address = 0.0.0.0:8888
+
+p2p-listen-endpoint = 0.0.0.0:9876
+
+#producer
+p2p-peer-address = genesis:9876
+p2p-peer-address = kafka:9876
+
+agent-name = "API"
+
+max-clients = 50
+
+plugin = eosio::state_history_plugin
+plugin = eosio::history_api_plugin
+plugin = eosio::chain_api_plugin
+
+state-history-dir = "state-history"
+trace-history = true
+chain-state-history = true
+state-history-endpoint = 0.0.0.0:8080
+access-control-allow-origin = *
+http-validate-host = false

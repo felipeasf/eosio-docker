@@ -1,0 +1,23 @@
+chain-state-db-size-mb = 4096
+chain-state-db-guard-size-mb = 256
+
+agent-name = "Producer"
+
+max-clients = 50
+
+enable-stale-production  = true
+pause-on-startup = false
+
+max-transaction-time = 5000
+
+plugin = eosio::chain_api_plugin
+plugin = eosio::net_api_plugin
+plugin = eosio::producer_api_plugin
+
+http-server-address = 0.0.0.0:8888
+p2p-listen-endpoint = 0.0.0.0:9876
+
+#peer list
+p2p-peer-address = api:9876
+p2p-peer-address = genesis:9876
+p2p-peer-address = kafka:9876
